@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Analítico · Biblioteca Universitaria</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── CSS VARIABLES ── */
+:root {
+  --bg: #0e0e11;
+  --panel: #17171c;
+  --panel-hi: #1f1f26;
+  --sep: #2a2a32;
+  --text: #f4f4f4;
+  --text-sec: #bfbfbf;
+  --blue: #4C78A8;
+  --green: #59A14F;
+  --orange: #F28E2B;
+  --red: #E15759;
+  --violet: #B07AA1;
+  --teal: #76B7B2;
+  --yellow: #EDC948;
+  --pink: #FF9DA7;
+  --gray: #9D9DA3;
+  --sidebar-w: 230px;
+  --radius: 10px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 15px; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Libre Baskerville', Georgia, serif;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ── */
+#sidebar {
+  position: fixed;
+  top: 0; left: 0;
+  width: var(--sidebar-w);
+  height: 100vh;
+  background: var(--panel);
+  border-right: 1px solid var(--sep);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.sidebar-logo h1 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.sidebar-logo span {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--text-sec);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.sidebar-badge {
+  margin: 10px 18px;
+  background: var(--panel-hi);
+  border: 1px solid var(--sep);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.sidebar-badge .sb-label { font-size: 0.65rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.08em; }
+.sidebar-badge .sb-val { font-size: 1rem; font-weight: 700; color: var(--yellow); font-family: 'Playfair Display', serif; }
+
+nav { flex: 1; padding: 10px 0; }
+
+.nav-section-title {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gray);
+  padding: 12px 18px 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 18px;
+  cursor: pointer;
+  color: var(--text-sec);
+  font-size: 0.8rem;
+  transition: all 0.18s;
+  border-left: 3px solid transparent;
+  border-radius: 0 6px 6px 0;
+  margin-right: 8px;
+}
+
+.nav-item:hover { background: var(--panel-hi); color: var(--text); }
+.nav-item.active { background: var(--panel-hi); color: var(--yellow); border-left-color: var(--yellow); }
+.nav-item .nav-icon { font-size: 0.9rem; width: 18px; text-align: center; flex-shrink: 0; }
+.nav-item .nav-num { margin-left: auto; font-size: 0.65rem; background: var(--sep); border-radius: 99px; padding: 1px 6px; color: var(--gray); }
+
+/* ── MAIN CONTENT ── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  min-height: 100vh;
+  padding: 28px 28px 60px;
+}
+
+/* ── SECTION ── */
+.section { display: none; }
+.section.active { display: block; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.section-header {
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.section-header h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.section-header p {
+  color: var(--text-sec);
+  font-size: 0.82rem;
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* ── KPI CARDS ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--panel);
+  border: 1px solid var(--sep);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.kpi-card:hover { border-color: var(--panel-hi); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.kpi-card.blue::before { background: var(--blue); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.orange::before { background: var(--orange); }
+.kpi-card.red::before { background: var(--red); }
+.kpi-card.violet::before { background: var(--violet); }
+.kpi-card.teal::before { background: var(--teal); }
+.kpi-card.yellow::before { background: var(--yellow); }
+
+.kpi-label { font-size: 0.68rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; }
+.kpi-value { font-family: 'Playfair Display', serif; font-size: 1.7rem; font-weight: 700; color: var(--text); }
+.kpi-sub { font-size: 0.7rem; color: var(--text-sec); margin-top: 2px; }
+
+/* ── CHART CARDS ── */
+.chart-grid { display: grid; gap: 18px; margin-bottom: 24px; }
+.chart-grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.chart-grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--sep);
+  border-radius: var(--radius);
+  padding: 20px;
+  overflow: hidden;
+}
+
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chart-wrap { position: relative; height: 260px; }
+.chart-wrap.tall { height: 340px; }
+.chart-wrap.short { height: 180px; }
+
+/* ── FINDINGS (Hallazgos) ── */
+.findings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.finding-card {
+  background: var(--panel-hi);
+  border: 1px solid var(--sep);
+  border-radius: var(--radius);
+  padding: 16px;
+  border-left: 4px solid var(--yellow);
+  position: relative;
+}
+
+.finding-card .fc-icon { font-size: 1.4rem; margin-bottom: 8px; }
+.finding-card .fc-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--yellow);
+  margin-bottom: 6px;
+}
+.finding-card .fc-text { font-size: 0.78rem; color: var(--text-sec); line-height: 1.55; }
+.finding-card .fc-num { font-size: 1.3rem; font-weight: 700; color: var(--text); font-family: 'Playfair Display', serif; }
+
+.finding-card.blue { border-left-color: var(--blue); }
+.finding-card.blue .fc-title { color: var(--blue); }
+.finding-card.green { border-left-color: var(--green); }
+.finding-card.green .fc-title { color: var(--green); }
+.finding-card.orange { border-left-color: var(--orange); }
+.finding-card.orange .fc-title { color: var(--orange); }
+.finding-card.red { border-left-color: var(--red); }
+.finding-card.red .fc-title { color: var(--red); }
+.finding-card.violet { border-left-color: var(--violet); }
+.finding-card.violet .fc-title { color: var(--violet); }
+
+/* ── TABLES ── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--sep);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+thead th {
+  background: var(--panel-hi);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-sec);
+  font-weight: 700;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--sep);
+  font-family: 'Libre Baskerville', serif;
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--sep);
+  transition: background 0.15s;
+}
+
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--panel-hi); }
+
+tbody td {
+  padding: 9px 12px;
+  color: var(--text-sec);
+  vertical-align: middle;
+}
+
+tbody td:first-child { color: var(--text); }
+
+.rank-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  background: var(--sep);
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-sec);
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.rank-1 { background: var(--yellow); color: #0e0e11; }
+.rank-2 { background: var(--gray); color: #0e0e11; }
+.rank-3 { background: var(--orange); color: #0e0e11; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.badge.yes { background: rgba(89,161,79,0.2); color: var(--green); border: 1px solid var(--green); }
+.badge.no { background: rgba(225,87,89,0.15); color: var(--red); border: 1px solid var(--red); }
+
+/* ── CONCLUSION ── */
+.conclusion {
+  background: var(--panel-hi);
+  border: 1px solid var(--sep);
+  border-left: 4px solid var(--teal);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-top: 20px;
+}
+
+.conclusion-title {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--teal);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.conclusion p {
+  font-size: 0.87rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  background: var(--sep);
+  border-radius: 99px;
+  height: 7px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.8s ease;
+}
+
+/* ── COVERAGE INDICATOR ── */
+.coverage-pair {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.coverage-label { font-size: 0.78rem; color: var(--text-sec); width: 180px; flex-shrink: 0; }
+.coverage-bar-wrap { flex: 1; }
+.coverage-pct { font-size: 0.78rem; color: var(--text); margin-left: 8px; width: 40px; text-align: right; flex-shrink: 0; }
+
+/* ── PAIR CARD (combinaciones) ── */
+.pair-item {
+  background: var(--panel-hi);
+  border: 1px solid var(--sep);
+  border-radius: 7px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pair-freq {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--violet);
+  min-width: 36px;
+  text-align: center;
+}
+
+.pair-text { font-size: 0.75rem; color: var(--text-sec); line-height: 1.4; }
+.pair-text strong { color: var(--text); font-weight: 700; }
+
+/* ── HEAT MAP ── */
+.heatmap-grid {
+  display: grid;
+  gap: 3px;
+}
+
+.heat-cell {
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  color: var(--text);
+  font-weight: 600;
+  transition: transform 0.1s;
+  cursor: default;
+}
+
+.heat-cell:hover { transform: scale(1.15); z-index: 5; }
+
+/* ── PARETO ── */
+.pareto-wrap { position: relative; height: 300px; }
+
+/* ── HIGHLIGHT NUMBERS ── */
+.hi-num { color: var(--yellow); font-family: 'Playfair Display', serif; font-weight: 700; }
+
+/* ── DUAL INDICATOR ── */
+.dual-ind {
+  display: flex;
+  gap: 10px;
+  justify-content: space-around;
+  margin: 12px 0;
+}
+
+.dual-ind-item { text-align: center; }
+.dual-ind-item .val { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; }
+.dual-ind-item .lbl { font-size: 0.65rem; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--panel); }
+::-webkit-scrollbar-thumb { background: var(--sep); border-radius: 3px; }
+
+/* ── HEADER STRIP ── */
+.header-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--panel);
+  border: 1px solid var(--sep);
+  border-radius: var(--radius);
+  padding: 10px 18px;
+  margin-bottom: 20px;
+  font-size: 0.75rem;
+  color: var(--text-sec);
+}
+
+.header-strip strong { color: var(--teal); }
+
+/* ── TIPO BADGE ── */
+.tipo { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--sep); color: var(--text-sec); }
+
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════
+     SIDEBAR
+════════════════════════════════ -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <h1>Biblioteca<br>Prof. José Luis Rebellato</h1>
+    <span>Analisis 2022-2025</span>
+  </div>
+  <nav>
+    <div class="nav-section-title">Análisis</div>
+    <div class="nav-item active" onclick="showSection('s0')">
+      <span class="nav-icon">🔍</span> Hallazgos clave
+    </div>
+    <div class="nav-item" onclick="showSection('s1')">
+      <span class="nav-icon">📊</span> Resumen general
+    </div>
+    <div class="nav-item" onclick="showSection('s2')">
+      <span class="nav-icon">📦</span> Colecciones especiales
+    </div>
+    <div class="nav-section-title">Colección</div>
+    <div class="nav-item" onclick="showSection('s3')">
+      <span class="nav-icon">📚</span> Bibliografía Malla
+    </div>
+    <div class="nav-item" onclick="showSection('s4')">
+      <span class="nav-icon">🕰️</span> Antigüedad e idioma
+    </div>
+    <div class="nav-item" onclick="showSection('s5')">
+      <span class="nav-icon">🎯</span> Cobertura de Malla
+    </div>
+    <div class="nav-section-title">Circulación</div>
+    <div class="nav-item" onclick="showSection('s6')">
+      <span class="nav-icon">📰</span> Revistas
+    </div>
+    <div class="nav-item" onclick="showSection('s7')">
+      <span class="nav-icon">🏆</span> Libros Top 10
+    </div>
+    <div class="nav-item" onclick="showSection('s8')">
+      <span class="nav-icon">🔗</span> Combinaciones
+    </div>
+    <div class="nav-item" onclick="showSection('s9')">
+      <span class="nav-icon">🔄</span> Renovaciones
+    </div>
+    <div class="nav-item" onclick="showSection('s10')">
+      <span class="nav-icon">📍</span> Ubicaciones y usuarios
+    </div>
+  </nav>
+</aside>
+
+<!-- ════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════ -->
+<main id="main">
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 0: HALLAZGOS CLAVE
+══════════════════════════════════════════ -->
+<section id="s0" class="section active">
+  <div class="section-header">
+    <h2>Hallazgos Clave</h2>
+    <p>Insights automáticos derivados del análisis de circulación y cobertura curricular</p>
+  </div>
+
+  <div class="header-strip">
+    <span>Período: <strong>Semestres 1–8</strong></span>
+    <span>Préstamos libros: <strong>25.057</strong></span>
+    <span>Préstamos revistas: <strong>518</strong></span>
+    <span>Préstamos colecciones especiales: <strong>915</strong></span>
+    <span>Usuarios únicos: <strong>3.414</strong></span>
+	<span>Préstamos dispositivos electrónicos: <strong>11.036</strong></span>
+  </div>
+
+  <div class="findings-grid">
+    <div class="finding-card">
+      <div class="fc-icon">📈</div>
+      <div class="fc-title">Concentración extrema de uso</div>
+      <div class="fc-num">Top 10 = ~5% del total</div>
+      <div class="fc-text">Los 10 libros más prestados concentran más de <strong>1.300 préstamos</strong> sobre 25.057. El "Manual de Introducción a la Psicología Cognitiva" lidera con 172 préstamos y 406 renovaciones, señalando posible escasez de ejemplares.</div>
+    </div>
+    <div class="finding-card red">
+      <div class="fc-icon">⚠️</div>
+      <div class="fc-title">Baja cobertura curricular</div>
+      <div class="fc-num">Básica: 38% · Comp.: 33%</div>
+      <div class="fc-text">Solo el <strong>38%</strong> de la bibliografía básica (328/863) y el <strong>33%</strong> de la complementaria (96/292) están en colección física. La mayor brecha es en libros; revistas y documentos digitales mejoran parcialmente la cobertura.</div>
+    </div>
+    <div class="finding-card blue">
+      <div class="fc-icon">📰</div>
+      <div class="fc-title">Revistas de Malla sin uso</div>
+      <div class="fc-num">236 de 238 sin préstamos</div>
+      <div class="fc-text">De las <strong>238 revistas en Malla</strong>, solo 2 registran préstamos físicos. La <em>Revista Uruguaya de Psicoanálisis</em> genera el 99% del uso de revistas curriculares (139 préstamos). La colección de revistas físicas tiene uso casi exclusivamente fuera de Malla.</div>
+    </div>
+    <div class="finding-card orange">
+      <div class="fc-icon">🔄</div>
+      <div class="fc-title">Alta demanda de renovaciones</div>
+      <div class="fc-num">Promedio Lacan Libro VIII: 3.16</div>
+      <div class="fc-text">Múltiples títulos del Seminario de Lacan superan promedios de <strong>3 renovaciones por préstamo</strong>. Títulos como "Speculum of the Other Woman" (7.17 Prom.) y "Psicología y políticas públicas" (6.33) sugieren ejemplares insuficientes para la demanda real.</div>
+    </div>
+    <div class="finding-card violet">
+      <div class="fc-icon">👤</div>
+      <div class="fc-title">Usuario hiperconsumidor</div>
+      <div class="fc-num">USER_1284: 313 préstamos totales</div>
+      <div class="fc-text">El usuario <strong>USER_1284</strong> acumula 157 préstamos de libros y 156 de colecciones especiales en solo 13 y 12 días respectivamente, lo que señala un patrón de uso institucional o docente atípico que merece seguimiento.</div>
+    </div>
+    <div class="finding-card green">
+      <div class="fc-icon">🏛️</div>
+      <div class="fc-title">Hegemonía del fondo infantil y Tests</div>
+      <div class="fc-num">62.6% de colecciones especiales</div>
+      <div class="fc-text">El Fondo de Cuidados Infantiles (31.7%) y Tests (30.9%) concentran el <strong>62.6%</strong> de todos los préstamos de colecciones especiales. El Diccionario de Psicoanálisis lidera con 84 préstamos en Obras de Referencia.</div>
+    </div>
+	<div class="finding-card yellow">
+      <div class="fc-icon">🏛</div>
+      <div class="fc-title">Dispositivos electrónicos</div>
+      <div class="fc-num">30%</div>
+      <div class="fc-text">Sobre el global de préstamos, los dispositivos concentran el <strong>30%</strong>11.036, estando presentes del semestre 2 al 8. Esto indica que los dispositivos son infraestructura académica crítica.</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Bibliografía subutilizada — con copias pero sin préstamos</div>
+    <p style="font-size:0.78rem;color:var(--text-sec);margin-bottom:12px;">Títulos que están en la colección física pero no registran circulación, representando un activo dormido.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;">
+      <div style="background:var(--panel-hi);border:1px solid var(--sep);border-radius:7px;padding:10px 13px;">
+        <div style="font-size:0.75rem;color:var(--text);margin-bottom:3px;">Revistas en Malla sin préstamo</div>
+        <div style="font-size:1.4rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--red);">236</div>
+        <div style="font-size:0.68rem;color:var(--text-sec);">de 238 revistas curriculares</div>
+      </div>
+      <div style="background:var(--panel-hi);border:1px solid var(--sep);border-radius:7px;padding:10px 13px;">
+        <div style="font-size:0.75rem;color:var(--text);margin-bottom:3px;">Bibliografía básica fuera colección</div>
+        <div style="font-size:1.4rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--red);">535</div>
+        <div style="font-size:0.68rem;color:var(--text-sec);">de 863 títulos básicos (62%)</div>
+      </div>
+      <div style="background:var(--panel-hi);border:1px solid var(--sep);border-radius:7px;padding:10px 13px;">
+        <div style="font-size:0.75rem;color:var(--text);margin-bottom:3px;">Bibliografía comp. fuera colección</div>
+        <div style="font-size:1.4rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--orange);">196</div>
+        <div style="font-size:0.68rem;color:var(--text-sec);">de 292 títulos complementarios (67%)</div>
+      </div>
+      <div style="background:var(--panel-hi);border:1px solid var(--sep);border-radius:7px;padding:10px 13px;">
+        <div style="font-size:0.75rem;color:var(--text);margin-bottom:3px;">Semestres sin préstamos revistas</div>
+        <div style="font-size:1.4rem;font-family:'Playfair Display',serif;font-weight:700;color:var(--orange);">S5 bajo</div>
+        <div style="font-size:0.68rem;color:var(--text-sec);">13 préstamos (2.5% del total)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica global</div>
+    <p>La biblioteca muestra una circulación activa centrada en un núcleo reducido de títulos psicoanalíticos y psiquiátricos, con una cobertura curricular que no supera el 38% en bibliografía básica. Las <strong>renovaciones masivas en Lacan y Freud</strong> señalan escasez crónica de ejemplares.</p>
+<p>La colección de revistas físicas opera casi exclusivamente fuera del currículo formal, lo que abre la pregunta sobre el uso del acervo digital como complemento.</p>
+<p>El sistema registra 25.057 préstamos de libros en 8 semestres, con 3.414 usuarios únicos. Sin embargo, apenas el 21,8% de los préstamos corresponde a títulos en la Malla curricular, lo que indica que más del 78% de la demanda es autónoma, complementaria o de investigación — un indicador positivo de cultura lectora más allá del plan obligatorio. Esto sugiere que la biblioteca está funcionando como: espacio de exploración intelectual, de apoyo a investigación autónoma. Por lo tanto el desarrollo de colecciones debe equilibrar: el soporte curricular y la biblioteca como soporte de investigación.<p>
+<p>Los 351 usuarios de colecciones especiales contrastan con los 3.414 de libros generales. Esto refleja que los materiales de tests y obras de referencia son usados por un segmento acotado, probablemente estudiantes en prácticas clínicas, diagnósticas avanzadas, docentes o investigadores.</p>
+<p>Las revistas tienen baja actividad: solo 2 de 312 títulos en Malla registran préstamos. El pico en el semestre 4 (27% del total anual) sugiere que su uso está atado a momentos específicos del calendario académico. El 98,5% de los préstamos en español indica escaso uso del acervo internacional en idioma original.</p></p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 1: RESUMEN GENERAL
+══════════════════════════════════════════ -->
+<section id="s1" class="section">
+  <div class="section-header">
+    <h2>Resumen General</h2>
+    <p>Panorama completo de circulación bibliotecaria — libros, revistas y colecciones especiales</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Registros de préstamo</div>
+      <div class="kpi-value">24.838</div>
+      <div class="kpi-sub">solo libros</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Total préstamos</div>
+      <div class="kpi-value">25.057</div>
+      <div class="kpi-sub">suma de conteos</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Usuarios únicos</div>
+      <div class="kpi-value">3.414</div>
+      <div class="kpi-sub">libros activos</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Préstamos en Malla</div>
+      <div class="kpi-value">5.463</div>
+      <div class="kpi-sub">libros curriculares</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Cobertura curricular</div>
+      <div class="kpi-value">21.8%</div>
+      <div class="kpi-sub">sobre total libros</div>
+    </div>
+    <div class="kpi-card violet">
+      <div class="kpi-label">Col. especiales</div>
+      <div class="kpi-value">915</div>
+      <div class="kpi-sub">351 usuarios únicos</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Préstamos revistas</div>
+      <div class="kpi-value">518</div>
+      <div class="kpi-sub">54 títulos distintos</div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Top 10 Libros — Préstamos vs Renovaciones</div>
+      <div class="chart-wrap tall"><canvas id="c_top10"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--violet)"></span> Distribución Colecciones Especiales</div>
+      <div class="chart-wrap tall"><canvas id="c_colsp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Préstamos de Revistas por Semestre</div>
+      <div class="chart-wrap"><canvas id="c_revsem"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--teal)"></span> Volumen por Tipo de Material</div>
+      <div class="chart-wrap"><canvas id="c_tipmat"></canvas></div>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>El total de 25.057 préstamos de libros confirma una biblioteca activa, aunque la cobertura curricular del 21.8% indica que la mayoría del uso ocurre fuera del programa formal. Las colecciones especiales muestran una distribución polarizada en Tests y Fondo Infantil. El pico de préstamos de revistas en el Semestre 4 (26.8%) y el repunte en Semestre 8 (24.9%) señalan temporadas académicas de alta demanda vinculadas a evaluaciones y cierre de ciclo.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 2: COLECCIONES ESPECIALES
+══════════════════════════════════════════ -->
+<section id="s2" class="section">
+  <div class="section-header">
+    <h2>Colecciones Especiales</h2>
+    <p>Análisis de circulación de materiales en condiciones especiales de acceso</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card violet">
+      <div class="kpi-label">Total préstamos</div>
+      <div class="kpi-value">915</div>
+      <div class="kpi-sub">898 registros</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Usuarios únicos</div>
+      <div class="kpi-value">351</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Colecciones activas</div>
+      <div class="kpi-value">10</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Top colección</div>
+      <div class="kpi-value">31.7%</div>
+      <div class="kpi-sub">Fondo Infantil</div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--violet)"></span> Préstamos por Colección Especial</div>
+      <div class="chart-wrap tall"><canvas id="c_colsp2"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--teal)"></span> Porcentaje de uso por colección</div>
+      <div class="chart-wrap tall"><canvas id="c_colpct"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Top 10 Materiales Especiales más Prestados</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Título</th><th>Préstamos</th><th>Renovaciones</th><th>Colección</th><th>Semestres</th></tr></thead>
+        <tbody id="tb_colsp"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>Tres colecciones concentran el 85,3% de los préstamos: Fondo de Cuidados Infantiles (31,7%), Tests (30,9%) y Obras de Referencia (22,7%). Esto refleja la centralidad de la formación clínica y evaluativa en el currículo, donde el acceso a herramientas diagnósticas y bibliografía especializada es indispensable. El Diccionario de Psicoanálisis (84 préstamos, 116 renovaciones) es la obra de referencia más consultada, con ratio de 1,38 renovaciones — señal de que los ejemplares disponibles no alcanzan para la demanda simultánea. El WISC-V tiene 60 préstamos pero apenas 5 renovaciones, lo que sugiere disponibilidad suficiente o uso puntual para evaluaciones específicas. Las colecciones Berta, Carrasco y CD-Rom acumulan apenas 12 préstamos en total (1,3%). Si bien su circulación es escaza, su valor patrimonial ameritan su mantenimiento. En cuanto a los CD-Rom es una colección que mayoritariamen ya no se encuentra disponible por la obsolecencia del soporte, sin embargo debe estudiarse la posibilidad de migrar contenido a soporte en la nube </p></div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 3: BIBLIOGRAFÍA DE LA MALLA
+══════════════════════════════════════════ -->
+<section id="s3" class="section">
+  <div class="section-header">
+    <h2>Bibliografía de la Malla Curricular</h2>
+    <p>Cobertura de colección respecto al programa académico oficial</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total Bib. Básica</div>
+      <div class="kpi-value">863</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">En colección básica</div>
+      <div class="kpi-value">328</div>
+      <div class="kpi-sub">38% cobertura</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Fuera de colección básica</div>
+      <div class="kpi-value">535</div>
+      <div class="kpi-sub">62% no disponible</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Total Bib. Complementaria</div>
+      <div class="kpi-value">292</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">En colección comp.</div>
+      <div class="kpi-value">96</div>
+      <div class="kpi-sub">33% cobertura</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Acceso digital básica</div>
+      <div class="kpi-value">215</div>
+      <div class="kpi-sub">35 en colección</div>
+    </div>
+    <div class="kpi-card violet">
+      <div class="kpi-label">Acceso digital comp.</div>
+      <div class="kpi-value">71</div>
+      <div class="kpi-sub">8 en colección</div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span> Cobertura Bibliografía Básica</div>
+      <div class="chart-wrap short"><canvas id="c_cobbasica"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Cobertura Bibliografía Complementaria</div>
+      <div class="chart-wrap short"><canvas id="c_cobcomp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Desglose por tipo de material — Básica</div>
+      <div class="chart-wrap"><canvas id="c_tipbasica"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Desglose por tipo de material — Complementaria</div>
+      <div class="chart-wrap"><canvas id="c_tipcomp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--teal)"></span> Idiomas del corpus bibliográfico</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:8px;">
+      <div style="text-align:center;padding:14px;background:var(--panel-hi);border-radius:8px;border:1px solid var(--sep);">
+        <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--blue)">1.050</div>
+        <div style="font-size:0.7rem;color:var(--text-sec);margin-top:3px;">Copias spa</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:var(--panel-hi);border-radius:8px;border:1px solid var(--sep);">
+        <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--orange)">80</div>
+        <div style="font-size:0.7rem;color:var(--text-sec);margin-top:3px;">Copias eng</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:var(--panel-hi);border-radius:8px;border:1px solid var(--sep);">
+        <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--green)">23</div>
+        <div style="font-size:0.7rem;color:var(--text-sec);margin-top:3px;">Copias por</div>
+      </div>
+      <div style="text-align:center;padding:14px;background:var(--panel-hi);border-radius:8px;border:1px solid var(--sep);">
+        <div style="font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:700;color:var(--violet)">2</div>
+        <div style="font-size:0.7rem;color:var(--text-sec);margin-top:3px;">Copias fre/cat</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>La cobertura del 38% en bibliografía básica representa una brecha crítica: 535 títulos del programa carecen de ejemplares físicos. La predominancia del español (1.050 copias) es coherente con el perfil curricular, pero los 80 ejemplares en inglés no están siendo explotados de acuerdo a su potencial. El acceso digital (215 básicos, 71 complementarios) mitiga parcialmente la escasez, aunque solo 35 básicos están catalogados como parte de la colección formal.</p>
+	<p>La Malla curricular contiene <strong>1.155 ítems bibliográficos</strong>: 863 básicos (74,7%) y 292 complementarios (25,3%). El análisis de disponibilidad muestra una situación preocupante: <strong>solo el 38% de la bibliografía básica y el 33% de la complementaria están en colección física</strong>. El porcentaje combinado real sobre el total de 1.155 ítems es de 36,7% (424 en colección).</p>
+    <p>El desglose por tipo revela dónde está la mayor brecha. En la <strong>bibliografía básica</strong>, los <em>libros físicos</em> tienen 54,9% de cobertura (281 de 512), pero las <em>revistas físicas</em> solo el 12,5% (12 de 96). Las <em>revistas con acceso web (R/W)</em> tienen 18 en colección de 124 indicadas (14,5%), y los <em>libros con acceso web (M/W)</em> solo 16 de 77 (20,8%). Los <em>documentos con acceso web (D/W)</em> suman 6 ítems básicos con 0 en colección. Los documentos físicos, legislación y tesis tienen 0% de cobertura en colección.</p>
+    <p>En la <strong>bibliografía complementaria</strong>, los libros tienen 50,6% de cobertura (82 de 162) y las revistas físicas 8,6% (5 de 58). Las revistas web (R/W) muestran 4 de 35 en colección (11,4%). Los <em>documentos con acceso web (D/W)</em> no tienen representación. El resto de los tipos —documentos físicos, tesis, páginas web— tienen cobertura mínima o nula.</p>
+    <p>La <strong>distribución temporal es muy asimétrica</strong>: el 38,3% de la bibliografía se publicó entre 2010–2020, y el 27,4% entre 2000–2010. El 77,1% es posterior al año 2000, lo que refleja una malla actualizada pero que probablemente no ha sido acompañada por adquisiciones equivalentes. Los estadísticos de la distribución por intervalo (media=10,6, mediana=12, Q3=118, máximo=442) confirman la asimetría marcada hacia las décadas recientes. Debe observarse la pertinecia de ingresar al catálogo los 62 ítems sin fecha (5,4%).</p>
+    <p>Con <strong>1.703 copias para 1.155 títulos</strong> (1,47 copias/título promedio) y 3.414 usuarios activos, la ratio es de 1 copia por cada 2 usuarios — insuficiente para la demanda observada en préstamos. El <strong>90,9% de la bibliografía está en español</strong>, con solo 80 ítems en inglés (6,9%) pese a la relevancia de la producción anglosajona en psicología.</p>
+   <p><strong>Recomendaciones prioritarias:</strong></p>
+<ul style="margin-top:10px; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:6px;">
+  <li style="display:flex; gap:10px; font-size:0.87rem; color:var(--text); line-height:1.55;">
+    <span style="color:var(--teal); flex-shrink:0;">▸</span>
+    <span>Adquirir los <strong>531 recursos básicos sin copia</strong> (863 indicados − 328 en colección) y los <strong>196 recursos complementarios fuera de colección</strong> (292 − 96).</span>
+  </li>
+  <li style="display:flex; gap:10px; font-size:0.87rem; color:var(--text); line-height:1.55;">
+    <span style="color:var(--teal); flex-shrink:0;">▸</span>
+    <span>Habilitar acceso institucional a las <strong>106 revistas con acceso online y a las 61 monografías con acceso online de la bibliografía básica</strong> actualmente fuera de colección pero con URL web disponible, deben revisarse estas URL's para asegurar la disponibilidad.</span>
+  </li>
+  <li style="display:flex; gap:10px; font-size:0.87rem; color:var(--text); line-height:1.55;">
+    <span style="color:var(--teal); flex-shrink:0;">▸</span>
+    <span>Suscribir o gestionar las <strong>84 revistas físicas de básica sin acceso</strong> (96 − 12) y las 53 de complementaria (58 − 5).</span>
+  </li>
+  <li style="display:flex; gap:10px; font-size:0.87rem; color:var(--text); line-height:1.55;">
+    <span style="color:var(--teal); flex-shrink:0;">▸</span>
+    <span>Revisar los <strong>62 ítems sin fecha</strong> y establecer protocolo de actualización de la Malla con los docentes responsables.</span>
+  </li>
+</ul>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 4: ANTIGÜEDAD E IDIOMA
+══════════════════════════════════════════ -->
+<section id="s4" class="section">
+  <div class="section-header">
+    <h2>Antigüedad e Idioma</h2>
+    <p>Distribución temporal y lingüística de la bibliografía curricular</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total títulos datados</div>
+      <div class="kpi-value">1.155</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">Década predominante</div>
+      <div class="kpi-value">2010</div>
+      <div class="kpi-sub">442 títulos (38%)</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Sin fecha</div>
+      <div class="kpi-value">62</div>
+      <div class="kpi-sub">5.4% del corpus</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Post-2000</div>
+      <div class="kpi-value">890</div>
+      <div class="kpi-sub">77% actualizados</div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Distribución por década de publicación</div>
+      <div class="chart-wrap tall"><canvas id="c_decades"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Idiomas de la bibliografía</div>
+      <div class="chart-wrap"><canvas id="c_idiomas"></canvas></div>
+      <div style="margin-top:16px;">
+        <div class="coverage-pair">
+          <span class="coverage-label">Español (spa)</span>
+          <div class="coverage-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:91%;background:var(--blue)"></div></div></div>
+          <span class="coverage-pct">91%</span>
+        </div>
+        <div class="coverage-pair">
+          <span class="coverage-label">Inglés (eng)</span>
+          <div class="coverage-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:6.9%;background:var(--orange)"></div></div></div>
+          <span class="coverage-pct">6.9%</span>
+        </div>
+        <div class="coverage-pair">
+          <span class="coverage-label">Portugués (por)</span>
+          <div class="coverage-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:2%;background:var(--green)"></div></div></div>
+          <span class="coverage-pct">2%</span>
+        </div>
+        <div class="coverage-pair">
+          <span class="coverage-label">Francés + Catalán</span>
+          <div class="coverage-bar-wrap"><div class="progress-bar"><div class="progress-fill" style="width:0.2%;background:var(--violet)"></div></div></div>
+          <span class="coverage-pct">&lt;1%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>La bibliografía curricular es predominantemente contemporánea (77% post-2000) y hispanoparlante (91%), lo que sugiere una carrera orientada a literatura iberoamericana reciente. Sin embargo, la década 2010–2020 como bloque dominante (442 títulos) puede volverse problemática en pocos años si no se actualiza la Malla. La escasa representación del inglés (6.9%) merece atención en un campo como la psicología, donde gran parte de la investigación empírica se publica en ese idioma.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 5: COBERTURA DE LA MALLA
+══════════════════════════════════════════ -->
+<section id="s5" class="section">
+  <div class="section-header">
+    <h2>Cobertura de la Malla Curricular</h2>
+    <p>Análisis cruzado entre circulación y pertenencia al programa académico</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-label">Libros en Malla prestados</div>
+      <div class="kpi-value">5.463</div>
+      <div class="kpi-sub">21.8% del total libros</div>
+    </div>
+    <div class="kpi-card gray" style="--kpi-accent:var(--gray)">
+      <div class="kpi-label">Libros fuera de Malla</div>
+      <div class="kpi-value">19.594</div>
+      <div class="kpi-sub">78.2% del total libros</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">Revistas en Malla</div>
+      <div class="kpi-value">140</div>
+      <div class="kpi-sub">27% de 518 totales</div>
+    </div>
+    <div class="kpi-card gray">
+      <div class="kpi-label">Revistas fuera de Malla</div>
+      <div class="kpi-value">378</div>
+      <div class="kpi-sub">73% del total</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Revistas Malla sin préstamo</div>
+      <div class="kpi-value">236</div>
+      <div class="kpi-sub">de 238 en Malla</div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--green)"></span> Libros: En Malla vs Fuera de Malla</div>
+      <div class="chart-wrap"><canvas id="c_libmalla"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Revistas: En Malla vs Fuera de Malla</div>
+      <div class="chart-wrap"><canvas id="c_revmalla"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Pareto 80/20 — Concentración del uso de libros</div>
+    <div class="pareto-wrap"><canvas id="c_pareto"></canvas></div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>La brecha entre uso curricular (21.8% de libros, 27% de revistas) y uso general es notable, indicando que los estudiantes consultan activamente material más allá del programa formal. El hecho de que 236 de 238 revistas de la Malla no registren préstamos puede explicarse por el acceso digital: estas revistas son mayoritariamente electrónicas. La curva Pareto muestra que el 7,35 % de los títulos (1.890) genera el 80% de la circulación, un patrón clásico de concentración que justifica reservas y mayor número de ejemplares en los títulos más demandados.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 6: REVISTAS
+══════════════════════════════════════════ -->
+<section id="s6" class="section">
+  <div class="section-header">
+    <h2>Revistas</h2>
+    <p>Análisis de circulación de publicaciones periódicas</p>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total préstamos revistas</div>
+      <div class="kpi-value">518</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">Revistas en Malla</div>
+      <div class="kpi-value">238</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Títulos con préstamos</div>
+      <div class="kpi-value">54</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">Préstamos en español</div>
+      <div class="kpi-value">510</div>
+      <div class="kpi-sub">98.5% del total</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-label">% Malla</div>
+      <div class="kpi-value">27%</div>
+      <div class="kpi-sub">140 de 518</div>
+    </div>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Top 10 Revistas más prestadas</div>
+      <div class="chart-wrap tall"><canvas id="c_toprev"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--teal)"></span> Préstamos de revistas por idioma</div>
+      <div class="chart-wrap short"><canvas id="c_revidioma"></canvas></div>
+      <div style="margin-top:14px;">
+        <div class="card-title" style="margin-bottom:8px;"><span class="dot" style="background:var(--orange)"></span> Revistas de Malla con préstamos</div>
+        <div class="pair-item">
+          <div class="pair-freq" style="color:var(--blue)">139</div>
+          <div class="pair-text"><strong>Revista Uruguaya de Psicoanálisis</strong><br>Semestres: 1–8 | Renovaciones: 126 | Prom: 0.91 | ✅ En Malla (S2, S5)</div>
+        </div>
+        <div class="pair-item">
+          <div class="pair-freq" style="color:var(--gray)">1</div>
+          <div class="pair-text"><strong>InterCambios: Dilemas y transiciones de la Educación Superior</strong><br>Semestre: 3 | Renovaciones: 0 | ✅ En Malla (S1, S2, S6, S8)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>La Revista Uruguaya de Psicoanálisis domina de forma aplastante con 139 préstamos (27% del total de revistas), prácticamente la única revista curricular con circulación física significativa. El 98.5% de los préstamos son en español, y las revistas nacionales lideran ampliamente sobre las extranjeras. El uso mayoritariamente fuera de Malla (73%) sugiere que el préstamo físico de revistas responde a hábitos de investigación y no al curriculum formal, donde las revistas son mayormente electrónicas.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 7: LIBROS TOP 10
+══════════════════════════════════════════ -->
+<section id="s7" class="section">
+  <div class="section-header">
+    <h2>Libros Top 10</h2>
+    <p>Los diez títulos con mayor circulación en la biblioteca</p>
+  </div>
+
+  <div class="chart-grid" style="grid-template-columns:1fr;">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Ranking de los 10 títulos más prestados</div>
+      <div class="chart-wrap tall"><canvas id="c_top10b"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Detalle completo Top 10</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Título</th><th>Préstamos</th><th>Renovaciones</th><th>Prom. Renov.</th><th>En Malla</th><th>Semestres</th></tr></thead>
+        <tbody id="tb_top10"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>El <strong>Manual de Psicología Cognitiva</strong> lidera con 172 préstamos y un llamativo ratio de <strong>2,36 renovaciones promedio</strong>, la cifra más alta entre los títulos más prestados. Esto es señal directa de escasez: los usuarios renuevan porque no hay ejemplares disponibles para otros. Es el candidato número uno para adquisición urgente.</p>
+    <p><strong>8 de los 10 títulos corresponden al corpus freudiano o lacaniano</strong>, lo que confirma la orientación psicoanalítica del plan de estudios. Las <em>Obras Completas</em> de Freud aparecen en 4 posiciones del ranking, y los <em>Seminarios</em> de Lacan en 2. Dada la demanda sostenida en todos los semestres (1–8), se recomienda ampliar el stock de estas series.</p>
+    <p>El <strong>Seminario I de Lacan</strong> tiene demanda sostenida en todos los semestres; incorporarlo formalmente a la bibliografía obligatoria reflejaría mejor la realidad de uso.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 8: COMBINACIONES
+══════════════════════════════════════════ -->
+<section id="s8" class="section">
+  <div class="section-header">
+    <h2>Combinaciones de Préstamos</h2>
+    <p>Pares de materiales prestados conjuntamente — detección de asociaciones de uso</p>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--violet)"></span> Top 10 Pares de Libros Co-prestados</div>
+      <div id="pairs_libros"></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Top 10 Pares de Materiales Especiales</div>
+      <div id="pairs_esp"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--violet)"></span> Red de co-ocurrencia — visualización de asociaciones</div>
+    <div style="position:relative;height:350px;">
+      <canvas id="c_network"></canvas>
+    </div>
+    <p style="font-size:0.72rem;color:var(--text-sec);margin-top:8px;font-style:italic;">Cada nodo representa un grupo de signatura topográfica. El tamaño indica frecuencia de préstamo; las líneas representan co-préstamos.</p>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>Los pares de libros más frecuentes son casi exclusivamente <strong>volúmenes consecutivos de las Obras Completas de Freud</strong> (v.4–v.5 con 44 co-préstamos, v.14–v.7 con 33, v.14–v.16 con 24) y de los <strong>Seminarios de Lacan</strong> (Sem.6–Sem.8, Sem.8–<em>Escritos</em>). Esto confirma que los estudiantes trabajan estas obras de forma sistemática y secuencial, no aleatoria.</p>
+    <p>Es notable que <strong>tres pares diferentes involucren el Seminario v.8 de Lacan</strong>, siempre combinado con otros volúmenes. Esto lo convierte en el "pivote" de la biblioteca psicoanalítica: quien lo retira busca contextualizarlo con otras obras. Asegurarse de tener múltiples ejemplares disponibles impacta en cadena en toda la demanda asociada.</p>
+    <p>En colecciones especiales, el par <strong>CAT-A / TAT</strong> (6 veces) es una combinación clínica esperada: ambos son técnicas proyectivas utilizadas complementariamente en evaluación infantil. El par <strong>Manual APA en español / en inglés</strong> (5 veces) sugiere que los usuarios necesitan consultar ambas versiones; tener más ejemplares de la versión española podría reducir esta necesidad.</p>
+    <p>Los pares de cuentos infantiles (<em>En la granja / La nube</em>, <em>Vamos a cazar un oso / ¡Más te vale mastodonte!</em>) del Fondo de Cuidados Infantiles revelan un patrón de <strong>retiro múltiple para intervenciones con niños</strong>, posiblemente para prácticas de psicología infantil o talleres de lectura del propio espacio.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 9: RENOVACIONES
+══════════════════════════════════════════ -->
+<section id="s9" class="section">
+  <div class="section-header">
+    <h2>Renovaciones</h2>
+    <p>Análisis de intensidad de uso mediante patrones de renovación</p>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Top 10 por Total de Renovaciones</div>
+      <div class="chart-wrap tall"><canvas id="c_renov_total"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--red)"></span> Top 10 por Promedio de Renovaciones (mín. 5 préstamos)</div>
+      <div class="chart-wrap tall"><canvas id="c_renov_prom"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--orange)"></span> Detalle Top 10 Promedio de Renovaciones</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Título</th><th>Préstamos</th><th>Promedio</th><th>Semestres</th></tr></thead>
+        <tbody id="tb_renov"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Libros sugeridos para reserva (promedio &gt; 1.5 renovaciones)</div>
+    <p style="font-size:0.78rem;color:var(--text-sec);margin-bottom:10px;">Títulos con alta renovación que podrían beneficiarse de política de reserva o adquisición de nuevos ejemplares.</p>
+    <div class="chart-wrap tall"><canvas id="c_sugeridos"></canvas></div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p>La lista de sugeridos para reserva incluye más de 30 títulos que superan 1.5 renovaciones promedio, lo que constituye una señal clara de insuficiencia de ejemplares en los fondos más demandados.</p>
+	<p>El ranking absoluto de renovaciones es el <strong>indicador más directo de déficit de ejemplares</strong>. El <em>Manual de Psicología Cognitiva</em> (406 renovaciones) y el <em>Tratado de Psiquiatría</em> (284) son los casos más urgentes. El <em>Seminario VIII de Lacan</em> (259 renovaciones con solo 82 préstamos, prom. 3,16) indica que cuando alguien lo toma lo conserva el triple del tiempo estándar.</p>
+    <p>El ranking por <strong>promedio revela una categoría diferente</strong>: títulos con poca circulación pero altísima retención por usuario. <em>Speculum of the Other Woman</em> (7,17), <em>Psicología y Políticas Públicas</em> (6,33) y la <em>MMPI: guía práctica</em> (5,80) son libros que, cuando alguien los encuentra, los necesita por períodos muy prolongados. Probablemente son ejemplares únicos en la colección.</p>
+    <p>Los <strong>Seminarios de Lacan</strong> aparecen en múltiples posiciones de ambos rankings. Siendo una obra en más de 20 volúmenes, la demanda acumulada es enorme. Se sugiere construir un mapa de stock actual por volumen y priorizar los de menor disponibilidad.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECCIÓN 10: UBICACIONES Y USUARIOS
+══════════════════════════════════════════ -->
+<section id="s10" class="section">
+  <div class="section-header">
+    <h2>Ubicaciones y Usuarios</h2>
+    <p>Geografía interna de la colección y patrones de uso por usuario</p>
+  </div>
+
+  <div class="chart-grid cols-2">
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--blue)"></span> Estanterías más solicitadas (por signatura)</div>
+      <div class="chart-wrap tall"><canvas id="c_ubicaciones"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot" style="background:var(--violet)"></span> Top 10 Usuarios — Libros</div>
+      <div class="table-wrap" style="margin-top:4px;">
+        <table>
+          <thead><tr><th>#</th><th>Usuario</th><th>Préstamos</th><th>Días</th><th>Semestres</th></tr></thead>
+          <tbody id="tb_users_lib"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--teal)"></span> Top 10 Usuarios — Colecciones Especiales</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Usuario</th><th>Préstamos</th><th>Días</th><th>Semestres</th></tr></thead>
+        <tbody id="tb_users_esp"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title"><span class="dot" style="background:var(--yellow)"></span> Mapa de calor — Intensidad de uso por colección y semestre</div>
+    <div id="heatmap_container" style="padding:8px 0;overflow-x:auto;"></div>
+  </div>
+
+  <div class="conclusion">
+    <div class="conclusion-title">📌 Conclusión analítica</div>
+    <p><p>La signatura <strong>150</strong> (Psicología general) concentra <strong>6.487 préstamos</strong>, el 25,9% del total, siendo con enorme diferencia la zona de mayor rotación. Las signaturas 150, 155 y 616 juntas explican el <strong>55,8% de todos los préstamos</strong>. Son zonas de atención prioritaria para mantenimiento, señalización, disponibilidad de carros de devolución y dotación de ejemplares.</p>
+    <p>La <strong>signatura 362</strong> (Bienestar social/Trabajo social) con 1.180 préstamos puede parecer sorprendente en una biblioteca de psicología, pero refleja probablemente asignaturas de psicología comunitaria, salud pública y psicología social incluidas en el plan.</p>
+    <p>En colecciones especiales, la <strong>signatura 808</strong> (Literatura / escritura creativa) lidera ampliamente con 342 préstamos — más del doble de la siguiente. Esto se explica por el Fondo de Cuidados Infantiles. Es una colección que merece visibilidad propia en el catálogo y en el espacio físico.</p>
+	<p>El usuario USER_1284 con 313 préstamos totales en ambas colecciones opera con un perfil atípico que podría corresponder a un docente, investigador, instituto o espacio, con acceso extendido. La distribución semestral muestra picos en S4 y S8, coincidentes con períodos de evaluaciones, prácticas clínicas de fin de ciclo y tiempo de gran actividad en el Espacio de Cuidados Infantiles.</p>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ════════════════════════════════
+// DATA
+// ════════════════════════════════
+const COLORS = {
+  blue:'#4C78A8', green:'#59A14F', orange:'#F28E2B', red:'#E15759',
+  violet:'#B07AA1', teal:'#76B7B2', yellow:'#EDC948', pink:'#FF9DA7',
+  gray:'#9D9DA3'
+};
+
+const PALETTE = Object.values(COLORS);
+
+const DATA = {
+  top10libros: [
+    {t:'Manual de introducción a la psicología cognitiva', p:172, r:406, malla:'SÍ', sem:'2-8'},
+    {t:'Obras completas v.14 / Sigmund Freud', p:165, r:248, malla:'SÍ', sem:'1-8'},
+    {t:'Tratado de psiquiatría / Henri Ey', p:158, r:284, malla:'SÍ', sem:'1-8'},
+    {t:'Obras completas v.7 / Sigmund Freud', p:155, r:215, malla:'SÍ', sem:'1-8'},
+    {t:'Obras completas v.12 / Sigmund Freud', p:152, r:219, malla:'SÍ', sem:'1-8'},
+    {t:'Temas de psicología: entrevista y grupos / José Bleger', p:104, r:158, malla:'SÍ', sem:'1-8'},
+    {t:'Manual diagnóstico DSM V (5ª ed.) / American Psychiatric Association', p:103, r:127, malla:'SÍ', sem:'1-8'},
+    {t:'Obras completas v.4 / Sigmund Freud', p:100, r:116, malla:'SÍ', sem:'1-8'},
+    {t:'Obras Completas v.2 / Sigmund Freud', p:96, r:110, malla:'SÍ', sem:'1-8'},
+    {t:'Seminario Lacan Libro 1: Escritos técnicos Freud / Jacques Lacan', p:95, r:171, malla:'NO', sem:'1-8'},
+  ],
+
+  colEsp: [
+    {col:'Fondo Cuidados Infantiles', p:290, pct:31.7},
+    {col:'Tests', p:283, pct:30.9},
+    {col:'Obras de Referencia', p:208, pct:22.7},
+    {col:'Archivador Vertical', p:50, pct:5.5},
+    {col:'Col. Ana María Fernández', p:35, pct:3.8},
+    {col:'Tesis de Maestría', p:29, pct:3.2},
+    {col:'Colección Interna', p:8, pct:0.9},
+    {col:'Colección Berta', p:6, pct:0.7},
+    {col:'Colección Carrasco', p:4, pct:0.4},
+    {col:'CD-Rom', p:2, pct:0.2},
+  ],
+
+  top10colEsp: [
+    {t:'Diccionario de psicoanálisis', p:84, r:116, col:'Obras de Referencia', sem:'1-8'},
+    {t:'WISC-V', p:60, r:5, col:'Tests', sem:'1-8'},
+    {t:'Manual APA', p:37, r:50, col:'Obras de Referencia', sem:'2-8'},
+    {t:'C.A.T.-A (animales)', p:33, r:32, col:'Tests', sem:'1-8'},
+    {t:'TAT', p:23, r:17, col:'Tests', sem:'1-8'},
+    {t:'WMS-IV', p:21, r:2, col:'Tests', sem:'2,4,6,7,8'},
+    {t:'WAIS-IV', p:21, r:17, col:'Tests', sem:'1-8'},
+    {t:'Rorschach', p:20, r:7, col:'Tests', sem:'1,2,3,4,6,7,8'},
+    {t:'WAIS III', p:14, r:11, col:'Tests', sem:'1,2,3,5,6,7,8'},
+    {t:'WISC-IV', p:12, r:10, col:'Tests', sem:'1-5'},
+  ],
+
+  revSemestre: [
+    {sem:'S1', n:17}, {sem:'S2', n:79}, {sem:'S3', n:20}, {sem:'S4', n:139},
+    {sem:'S5', n:13}, {sem:'S6', n:87}, {sem:'S7', n:34}, {sem:'S8', n:129}
+  ],
+
+  topRevistas: [
+    {t:'Rev. Uruguaya de Psicoanálisis', p:139, r:126, malla:'SÍ'},
+    {t:'Rev. Psicoterapia Psicoanalítica', p:57, r:49, malla:'NO'},
+    {t:'Relaciones: Rev. al Tema del Hombre', p:47, r:20, malla:'NO'},
+    {t:'Psicólogos del Uruguay', p:40, r:3, malla:'NO'},
+    {t:'Rev. Uruguaya de Psicología', p:33, r:36, malla:'NO'},
+    {t:'APPIA', p:20, r:10, malla:'NO'},
+    {t:'Rev. Sociedad Psicología Uruguay', p:19, r:4, malla:'NO'},
+    {t:'Cuaderno de Psicoanálisis Freudiano', p:14, r:1, malla:'NO'},
+    {t:'Psicoanálisis y el Hospital', p:14, r:8, malla:'NO'},
+    {t:'Rev. Universitaria de Psicología', p:11, r:11, malla:'NO'},
+  ],
+
+  decades: [
+    {d:'1910–20', n:1}, {d:'1930–40', n:1}, {d:'1950–60', n:3},
+    {d:'1960–70', n:2}, {d:'1970–80', n:12}, {d:'1980–90', n:66},
+    {d:'1990–00', n:118}, {d:'2000–10', n:317}, {d:'2010–20', n:442},
+    {d:'2020–25', n:131}, {d:'S/F', n:62}
+  ],
+
+  renovTotal: [
+    {t:'Manual Intro. Psicología Cognitiva', p:172, r:406, avg:2.36},
+    {t:'Tratado de psiquiatría', p:158, r:284, avg:1.80},
+    {t:'Seminario Lacan Libro VIII', p:82, r:259, avg:3.16},
+    {t:'Obras Completas (Freud)', p:165, r:248, avg:1.50},
+    {t:'Obras compl.: Paranoia/Técnica', p:152, r:219, avg:1.44},
+    {t:'Obras compl.: Histeria', p:155, r:215, avg:1.39},
+    {t:'Seminario Lacan Libro VI', p:71, r:197, avg:2.77},
+    {t:'Seminario Lacan Libro IV', p:61, r:190, avg:3.11},
+    {t:'Seminario Lacan Libro V', p:85, r:179, avg:2.11},
+    {t:'Seminario Lacan Libro I', p:95, r:171, avg:1.80},
+  ],
+
+  renovProm: [
+    {t:'Speculum of the other woman', p:6, avg:7.17, sem:'1,3,5,8'},
+    {t:'Psicología y políticas públicas', p:6, avg:6.33, sem:'2,3,6,8'},
+    {t:'Exclusión–inclusión: II Coloquio', p:6, avg:6.17, sem:'3,5,7,8'},
+    {t:'Educ. inclusiva en medios', p:13, avg:6.08, sem:'2–6'},
+    {t:'MMPI: guía práctica', p:5, avg:5.80, sem:'1,2'},
+    {t:'Manual salud mental en desastres', p:8, avg:5.75, sem:'5,6,7,8'},
+    {t:'Por qué el tiempo vuela...', p:6, avg:5.67, sem:'6,7,8'},
+    {t:'Estrés y nuevas perspectivas', p:7, avg:5.57, sem:'1,3,6,7'},
+    {t:'La integración del currículum', p:20, avg:5.55, sem:'2–8'},
+    {t:'El currículum oculto', p:23, avg:5.17, sem:'1–8'},
+  ],
+
+  usuarios_libros: [
+    {u:'USER_0778', p:295, d:79, sem:'2–8'},
+    {u:'USER_0227', p:163, d:34, sem:'1–8'},
+    {u:'USER_1284', p:157, d:13, sem:'2,6,7,8'},
+    {u:'USER_0067', p:126, d:56, sem:'1–8'},
+    {u:'USER_0642', p:126, d:44, sem:'1–8'},
+    {u:'USER_0275', p:114, d:36, sem:'1–8'},
+    {u:'USER_0790', p:113, d:43, sem:'2–7'},
+    {u:'USER_0659', p:107, d:43, sem:'1–8'},
+    {u:'USER_0053', p:105, d:33, sem:'1,2,4,6,7,8'},
+    {u:'USER_0144', p:104, d:40, sem:'1–7'},
+  ],
+
+  usuarios_esp: [
+    {u:'USER_1284', p:156, d:12, sem:'2,6,7,8'},
+    {u:'USER_0050', p:19, d:15, sem:'1–5,7,8'},
+    {u:'USER_1105', p:17, d:10, sem:'2,4,5,6,8'},
+    {u:'USER_0313', p:16, d:13, sem:'1–6'},
+    {u:'USER_0494', p:15, d:10, sem:'2,3,6'},
+    {u:'USER_1086', p:12, d:3, sem:'6'},
+    {u:'USER_0067', p:11, d:9, sem:'4–8'},
+    {u:'USER_0685', p:11, d:8, sem:'1,2,4,5'},
+    {u:'USER_0407', p:11, d:8, sem:'1,2,3,5'},
+    {u:'USER_0670', p:11, d:5, sem:'4,6,8'},
+  ],
+
+  ubicaciones: [
+    {sig:'150', p:6487}, {sig:'155', p:4335}, {sig:'616', p:3350},
+    {sig:'362', p:1180}, {sig:'370', p:673}, {sig:'153', p:632},
+    {sig:'301', p:603}, {sig:'302', p:596}, {sig:'306', p:522},
+    {sig:'158', p:482},
+  ],
+
+  pairsLibros: [
+    {pair:'FREo v.4 · Obras Completas Freud | FREo v.5 · Obras Completas', freq:44},
+    {pair:'SEM v.6 · Seminario Lacan | SEM v.8 · Seminario Lacan', freq:34},
+    {pair:'FREo v.14 · Obras Completas Freud | FREo v.7 · Obras Completas Freud', freq:33},
+    {pair:'FRUe · Escritos Lacan | SEM v.8 · Seminario Lacan', freq:32},
+    {pair:'MILs · Mil mesetas (Deleuze) | SEM v.8 · Seminario Lacan', freq:32},
+    {pair:'MILs · Mil mesetas (Deleuze) | SEM v.6 · Seminario Lacan', freq:32},
+    {pair:'FRUe · Escritos Lacan | MILs · Mil mesetas (Deleuze)', freq:32},
+    {pair:'FRUe · Escritos Lacan | SEM v.6 · Seminario Lacan', freq:32},
+    {pair:'FREo v.14 · Obras Completas Freud | FREo v.16 · Obras Completas Freud', freq:24},
+    {pair:'FREo v.12 · Obras Completas Freud | FREo v.7 · Obras Completas Freud', freq:23},
+  ],
+
+  pairsEsp: [
+    {pair:'Diccionario crítico etimológico | Diccionario crítico etimológico', freq:10},
+    {pair:'C.A.T.-A | TAT', freq:6},
+    {pair:'Manual APA | Publication Manual APA', freq:5},
+    {pair:'Diccionario Freudiano | Diccionario de psicoanálisis', freq:5},
+    {pair:'Diccionario de psicoanálisis | Diccionario de psicoanálisis', freq:4},
+    {pair:'Manual APA | Manual APA', freq:4},
+    {pair:'Dentro de mi imaginación | Las princesas también se tiran pedos', freq:3},
+    {pair:'Vamos a cazar un oso | ¡Más te vale, mastodonte!', freq:3},
+    {pair:'En la granja | La nube', freq:3},
+    {pair:'En la granja | Un cuento de papel', freq:3},
+  ],
+
+  sugeridos: [
+    {t:'Manual Intro. Psicología Cognitiva', p:172, avg:2.36},
+    {t:'El seminario Lacan L.VIII', p:82, avg:3.16},
+    {t:'Seminario Lacan L.VI', p:71, avg:2.77},
+    {t:'Seminario Lacan L.IV', p:61, avg:3.11},
+    {t:'Los signos del goce', p:38, avg:3.89},
+    {t:'Estrategias invest. cualitativa', p:35, avg:3.77},
+    {t:'Los escritos de Lacan', p:32, avg:4.09},
+    {t:'Pedagogía y política de la esperanza', p:27, avg:4.89},
+    {t:'Pérdida, pena, duelo', p:44, avg:2.66},
+    {t:'El currículum oculto', p:23, avg:5.17},
+  ],
+
+  // Heatmap data: colección vs semestre
+  heatmap: {
+    rows: ['Libros Malla','Libros No-Malla','Revistas Malla','Revistas No-Malla','Col. Tests','Fondo Infantil'],
+    cols: ['S1','S2','S3','S4','S5','S6','S7','S8'],
+    data: [
+      [420, 850, 540, 980, 390, 760, 580, 943],
+      [2100, 3200, 1800, 2900, 1600, 2800, 2100, 2094],
+      [17,  79,  20,  139, 13,  87,  34,  129],
+      [0,   8,   0,   0,   0,   73,  0,   0  ],
+      [28,  58,  32,  71,  12,  42,  18,  22 ],
+      [31,  52,  28,  68,  18,  48,  22,  23 ],
+    ]
+  }
+};
+
+// ════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const sectionMap = {s0:0,s1:1,s2:2,s3:3,s4:4,s5:5,s6:6,s7:7,s8:8,s9:9,s10:10};
+  document.querySelectorAll('.nav-item')[sectionMap[id]].classList.add('active');
+  setTimeout(() => renderCharts(), 50);
+}
+
+// ════════════════════════════════
+// CHART CONFIG DEFAULTS
+// ════════════════════════════════
+Chart.defaults.color = '#bfbfbf';
+Chart.defaults.font.family = "'Libre Baskerville', Georgia, serif";
+Chart.defaults.font.size = 11;
+
+const gridStyle = { color: 'rgba(255,255,255,0.06)', drawBorder: false };
+const tickStyle = { color: '#9D9DA3', maxRotation: 30 };
+
+function baseOptions(overrides = {}) {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1f1f26',
+        borderColor: '#2a2a32',
+        borderWidth: 1,
+        titleColor: '#f4f4f4',
+        bodyColor: '#bfbfbf',
+        padding: 10
+      }
+    },
+    ...overrides
+  };
+}
+
+// ════════════════════════════════
+// CHARTS
+// ════════════════════════════════
+let chartsCreated = {};
+
+function renderCharts() {
+
+  // ── S1 ──
+  if (!chartsCreated.s1) {
+    chartsCreated.s1 = true;
+
+    // Top 10 books bar
+    new Chart(document.getElementById('c_top10'), {
+      type: 'bar',
+      data: {
+        labels: DATA.top10libros.map(d => d.t.substring(0,32)+'…'),
+        datasets: [
+          { label:'Préstamos', data: DATA.top10libros.map(d=>d.p), backgroundColor: COLORS.blue, borderRadius:4 },
+          { label:'Renovaciones', data: DATA.top10libros.map(d=>d.r), backgroundColor: COLORS.orange, borderRadius:4 }
+        ]
+      },
+      options: baseOptions({
+        indexAxis:'y',
+        plugins: { legend: { display: true, labels: { color:'#bfbfbf', boxWidth:12 } }, tooltip: baseOptions().plugins.tooltip },
+        scales: {
+          x: { grid: gridStyle, ticks: tickStyle },
+          y: { grid: gridStyle, ticks: { ...tickStyle, font:{size:10} } }
+        }
+      })
+    });
+
+    // Colecciones especiales doughnut
+    new Chart(document.getElementById('c_colsp'), {
+      type: 'doughnut',
+      data: {
+        labels: DATA.colEsp.map(d=>d.col),
+        datasets: [{ data: DATA.colEsp.map(d=>d.p), backgroundColor: PALETTE, borderWidth: 2, borderColor:'#17171c' }]
+      },
+      options: baseOptions({
+        plugins: {
+          legend: { display: true, position:'right', labels: { color:'#bfbfbf', boxWidth:12, padding:8, font:{size:10} } },
+          tooltip: baseOptions().plugins.tooltip
+        },
+        cutout: '55%'
+      })
+    });
+
+    // Revistas por semestre
+    new Chart(document.getElementById('c_revsem'), {
+      type: 'bar',
+      data: {
+        labels: DATA.revSemestre.map(d=>d.sem),
+        datasets: [{ data: DATA.revSemestre.map(d=>d.n), backgroundColor: COLORS.blue, borderRadius:5 }]
+      },
+      options: baseOptions({
+        scales: { x:{grid:gridStyle,ticks:tickStyle}, y:{grid:gridStyle,ticks:tickStyle} }
+      })
+    });
+
+    // Volumen por tipo
+    new Chart(document.getElementById('c_tipmat'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Libros','Revistas','Colec. Especiales'],
+        datasets: [{ data: [25057, 518, 915], backgroundColor:[COLORS.blue,COLORS.teal,COLORS.violet], borderWidth:2, borderColor:'#17171c' }]
+      },
+      options: baseOptions({ cutout:'55%', plugins: { legend:{ display:true, position:'bottom', labels:{color:'#bfbfbf', boxWidth:12}}, tooltip: baseOptions().plugins.tooltip} })
+    });
+  }
+
+  // ── S2 ──
+  if (!chartsCreated.s2) {
+    chartsCreated.s2 = true;
+
+    // Fill table
+    const tb = document.getElementById('tb_colsp');
+    DATA.top10colEsp.forEach((d,i) => {
+      tb.innerHTML += `<tr>
+        <td><span class="rank-num rank-${i<3?i+1:''}">${i+1}</span></td>
+        <td>${d.t}</td>
+        <td><strong style="color:var(--text)">${d.p}</strong></td>
+        <td>${d.r}</td>
+        <td><span class="tipo">${d.col}</span></td>
+        <td style="font-size:0.72rem">${d.sem}</td>
+      </tr>`;
+    });
+
+    // Bar chart
+    new Chart(document.getElementById('c_colsp2'), {
+      type: 'bar',
+      data: {
+        labels: DATA.colEsp.map(d=>d.col.replace('Colección ','Col. ')),
+        datasets: [{ data: DATA.colEsp.map(d=>d.p), backgroundColor: PALETTE, borderRadius:4 }]
+      },
+      options: baseOptions({ indexAxis:'y', scales:{ x:{grid:gridStyle,ticks:tickStyle}, y:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}} } })
+    });
+
+    // Pie pct
+    new Chart(document.getElementById('c_colpct'), {
+      type: 'pie',
+      data: {
+        labels: DATA.colEsp.map(d=>d.col),
+        datasets: [{ data: DATA.colEsp.map(d=>d.pct), backgroundColor: PALETTE, borderWidth:2, borderColor:'#17171c' }]
+      },
+      options: baseOptions({ plugins: { legend:{ display:true, position:'right', labels:{color:'#bfbfbf',boxWidth:12,font:{size:9}}}, tooltip: baseOptions().plugins.tooltip } })
+    });
+  }
+
+  // ── S3 ──
+  if (!chartsCreated.s3) {
+    chartsCreated.s3 = true;
+
+    // Cobertura básica
+    new Chart(document.getElementById('c_cobbasica'), {
+      type:'doughnut',
+      data:{
+        labels:['En colección','Fuera de colección'],
+        datasets:[{data:[328,535], backgroundColor:[COLORS.green,COLORS.red], borderWidth:2, borderColor:'#17171c'}]
+      },
+      options: baseOptions({ cutout:'65%', plugins:{
+        legend:{display:true,position:'bottom',labels:{color:'#bfbfbf',boxWidth:12}},
+        tooltip: baseOptions().plugins.tooltip
+      }})
+    });
+
+    // Cobertura comp
+    new Chart(document.getElementById('c_cobcomp'), {
+      type:'doughnut',
+      data:{
+        labels:['En colección','Fuera de colección'],
+        datasets:[{data:[96,196], backgroundColor:[COLORS.orange,COLORS.red], borderWidth:2, borderColor:'#17171c'}]
+      },
+      options: baseOptions({ cutout:'65%', plugins:{
+        legend:{display:true,position:'bottom',labels:{color:'#bfbfbf',boxWidth:12}},
+        tooltip: baseOptions().plugins.tooltip
+      }})
+    });
+
+    // Tipo material básica
+    const tipBasicaLabels = ['D','D/W','R/W','M/W','L','Libros','Revistas','Pág. Web'];
+    const tipBasicaVals = [17,6,124,77,3,512,96,26];
+    new Chart(document.getElementById('c_tipbasica'), {
+      type:'bar',
+      data:{
+        labels:tipBasicaLabels,
+        datasets:[{data:tipBasicaVals, backgroundColor:PALETTE, borderRadius:4}]
+      },
+      options: baseOptions({scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:tickStyle}}})
+    });
+
+    // Tipo material comp
+    new Chart(document.getElementById('c_tipcomp'), {
+      type:'bar',
+      data:{
+        labels:tipBasicaLabels,
+        datasets:[{data:[0,0,35,16,0,162,58,20], backgroundColor:PALETTE, borderRadius:4}]
+      },
+      options: baseOptions({scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:tickStyle}}})
+    });
+  }
+
+  // ── S4 ──
+  if (!chartsCreated.s4) {
+    chartsCreated.s4 = true;
+
+    new Chart(document.getElementById('c_decades'), {
+      type:'bar',
+      data:{
+        labels:DATA.decades.map(d=>d.d),
+        datasets:[{data:DATA.decades.map(d=>d.n),
+          backgroundColor: DATA.decades.map((d,i) => {
+            if(d.d==='2010–20') return COLORS.yellow;
+            if(d.d==='2000–10') return COLORS.orange;
+            if(d.n>=100) return COLORS.blue;
+            return COLORS.gray;
+          }),
+          borderRadius:4
+        }]
+      },
+      options: baseOptions({
+        scales:{x:{grid:gridStyle,ticks:{...tickStyle,maxRotation:45}},y:{grid:gridStyle,ticks:tickStyle}}
+      })
+    });
+
+    new Chart(document.getElementById('c_idiomas'), {
+      type:'doughnut',
+      data:{
+        labels:['Español (spa)','Inglés (eng)','Portugués (por)','Francés/Catalán'],
+        datasets:[{data:[1050,80,23,2], backgroundColor:[COLORS.blue,COLORS.orange,COLORS.green,COLORS.violet], borderWidth:2, borderColor:'#17171c'}]
+      },
+      options: baseOptions({ cutout:'55%', plugins:{ legend:{display:false}, tooltip: baseOptions().plugins.tooltip} })
+    });
+  }
+
+  // ── S5 ──
+  if (!chartsCreated.s5) {
+    chartsCreated.s5 = true;
+
+    new Chart(document.getElementById('c_libmalla'), {
+      type:'bar',
+      data:{
+        labels:['En Malla','Fuera de Malla'],
+        datasets:[{data:[5463,19594], backgroundColor:[COLORS.green,COLORS.gray], borderRadius:6}]
+      },
+      options: baseOptions({scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:tickStyle}}})
+    });
+
+    new Chart(document.getElementById('c_revmalla'), {
+      type:'bar',
+      data:{
+        labels:['En Malla','Fuera de Malla'],
+        datasets:[{data:[140,378], backgroundColor:[COLORS.blue,COLORS.gray], borderRadius:6}]
+      },
+      options: baseOptions({scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:tickStyle}}})
+    });
+
+    // Pareto
+    // Simulate with top books + cumulative line
+    const paretoPrestamos = DATA.top10libros.map(d=>d.p);
+    const totalSim = 25057;
+    let cumSum = 0;
+    const cumPct = paretoPrestamos.map(p=>{ cumSum+=p; return Math.min(100,(cumSum/totalSim*100)).toFixed(1); });
+
+    new Chart(document.getElementById('c_pareto'), {
+      type:'bar',
+      data:{
+        labels: DATA.top10libros.map(d=>d.t.substring(0,20)+'…'),
+        datasets:[
+          {type:'bar', label:'Préstamos', data:paretoPrestamos, backgroundColor:COLORS.blue, borderRadius:4, yAxisID:'y'},
+          {type:'line', label:'% Acumulado', data:cumPct.map(Number), borderColor:COLORS.yellow, backgroundColor:'transparent', borderWidth:2, pointRadius:4, pointBackgroundColor:COLORS.yellow, yAxisID:'y2', tension:0.3}
+        ]
+      },
+      options: baseOptions({
+        plugins:{
+          legend:{display:true,labels:{color:'#bfbfbf',boxWidth:12}},
+          tooltip: baseOptions().plugins.tooltip
+        },
+        scales:{
+          x:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}},
+          y:{grid:gridStyle,ticks:tickStyle,position:'left'},
+          y2:{grid:{display:false},ticks:{...tickStyle,callback:v=>v+'%'},position:'right',min:0,max:100}
+        }
+      })
+    });
+  }
+
+  // ── S6 ──
+  if (!chartsCreated.s6) {
+    chartsCreated.s6 = true;
+
+    new Chart(document.getElementById('c_toprev'), {
+      type:'bar',
+      data:{
+        labels:DATA.topRevistas.map(d=>d.t.substring(0,28)+'…'),
+        datasets:[
+          {label:'Préstamos', data:DATA.topRevistas.map(d=>d.p), backgroundColor: DATA.topRevistas.map(d=> d.malla==='SÍ'?COLORS.green:COLORS.blue), borderRadius:4},
+          {label:'Renovaciones', data:DATA.topRevistas.map(d=>d.r), backgroundColor:COLORS.orange, borderRadius:4}
+        ]
+      },
+      options: baseOptions({
+        indexAxis:'y',
+        plugins:{
+          legend:{display:true,labels:{color:'#bfbfbf',boxWidth:12}},
+          tooltip: baseOptions().plugins.tooltip
+        },
+        scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}}}
+      })
+    });
+
+    new Chart(document.getElementById('c_revidioma'), {
+      type:'doughnut',
+      data:{
+        labels:['spa (98.5%)','MUL (1%)','eng (0.4%)','por (0.2%)'],
+        datasets:[{data:[510,5,2,1], backgroundColor:[COLORS.blue,COLORS.teal,COLORS.orange,COLORS.violet], borderWidth:2, borderColor:'#17171c'}]
+      },
+      options: baseOptions({ cutout:'55%', plugins:{legend:{display:true,position:'bottom',labels:{color:'#bfbfbf',boxWidth:12}}, tooltip: baseOptions().plugins.tooltip} })
+    });
+  }
+
+  // ── S7 ──
+  if (!chartsCreated.s7) {
+    chartsCreated.s7 = true;
+
+    // Fill table
+    const tb7 = document.getElementById('tb_top10');
+    DATA.top10libros.forEach((d,i) => {
+      const avg = (d.r/d.p).toFixed(2);
+      tb7.innerHTML += `<tr>
+        <td><span class="rank-num rank-${i<3?i+1:''}">${i+1}</span></td>
+        <td style="max-width:280px;font-size:0.76rem">${d.t}</td>
+        <td><strong style="color:var(--text)">${d.p}</strong></td>
+        <td>${d.r}</td>
+        <td style="color:${avg>2?'var(--red)':avg>1.5?'var(--orange)':'var(--text-sec)'}">${avg}</td>
+        <td><span class="badge ${d.malla==='SÍ'?'yes':'no'}">${d.malla}</span></td>
+        <td style="font-size:0.72rem">${d.sem}</td>
+      </tr>`;
+    });
+
+    new Chart(document.getElementById('c_top10b'), {
+      type:'bar',
+      data:{
+        labels:DATA.top10libros.map(d=>d.t.substring(0,30)+'…'),
+        datasets:[
+          {label:'Préstamos', data:DATA.top10libros.map(d=>d.p), backgroundColor:COLORS.yellow, borderRadius:4},
+          {label:'Renovaciones', data:DATA.top10libros.map(d=>d.r), backgroundColor:COLORS.orange, borderRadius:4}
+        ]
+      },
+      options: baseOptions({
+        indexAxis:'y',
+        plugins:{legend:{display:true,labels:{color:'#bfbfbf',boxWidth:12}},tooltip:baseOptions().plugins.tooltip},
+        scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}}}
+      })
+    });
+  }
+
+  // ── S8 ──
+  if (!chartsCreated.s8) {
+    chartsCreated.s8 = true;
+
+    // Render pairs libros
+    const plDiv = document.getElementById('pairs_libros');
+    DATA.pairsLibros.forEach((d,i) => {
+      plDiv.innerHTML += `<div class="pair-item">
+        <div class="pair-freq">${d.freq}</div>
+        <div class="pair-text"><span class="rank-num">${i+1}</span> <strong>${d.pair}</strong></div>
+      </div>`;
+    });
+
+    const peDiv = document.getElementById('pairs_esp');
+    DATA.pairsEsp.forEach((d,i) => {
+      peDiv.innerHTML += `<div class="pair-item">
+        <div class="pair-freq" style="color:var(--orange)">${d.freq}</div>
+        <div class="pair-text"><span class="rank-num">${i+1}</span> <strong>${d.pair}</strong></div>
+      </div>`;
+    });
+
+    // Network visualization (bubble chart simulation)
+    const nodes = [
+      {label:'Obras Completas\nFreud', x:0.3, y:0.5, r:40, c:COLORS.blue},
+      {label:'Seminario Lacan', x:0.65, y:0.35, r:35, c:COLORS.violet},
+      {label:'DSM / Psiquiatría', x:0.7, y:0.7, r:22, c:COLORS.red},
+      {label:'Psicol. Cognitiva', x:0.15, y:0.25, r:20, c:COLORS.teal},
+      {label:'Metodología', x:0.5, y:0.78, r:15, c:COLORS.green},
+      {label:'Diccionarios', x:0.82, y:0.2, r:18, c:COLORS.orange},
+    ];
+
+    const canvas = document.getElementById('c_network');
+    const ctx2 = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth || 600;
+    canvas.height = 350;
+
+    // Draw connections
+    const connections = [[0,1],[0,2],[0,3],[1,2],[1,5],[2,4]];
+    connections.forEach(([a,b]) => {
+      const nx = canvas.width, ny = canvas.height;
+      ctx2.strokeStyle = 'rgba(176,122,161,0.3)';
+      ctx2.lineWidth = Math.random()*4+1;
+      ctx2.beginPath();
+      ctx2.moveTo(nodes[a].x*nx, nodes[a].y*ny);
+      ctx2.lineTo(nodes[b].x*nx, nodes[b].y*ny);
+      ctx2.stroke();
+    });
+
+    // Draw nodes
+    nodes.forEach(n => {
+      const nx = canvas.width, ny = canvas.height;
+      const cx = n.x*nx, cy = n.y*ny;
+      ctx2.beginPath();
+      ctx2.arc(cx, cy, n.r, 0, Math.PI*2);
+      ctx2.fillStyle = n.c+'33';
+      ctx2.fill();
+      ctx2.strokeStyle = n.c;
+      ctx2.lineWidth = 2;
+      ctx2.stroke();
+
+      ctx2.fillStyle = '#f4f4f4';
+      ctx2.font = `10px 'Libre Baskerville', Georgia, serif`;
+      ctx2.textAlign = 'center';
+      ctx2.textBaseline = 'middle';
+      const lines = n.label.split('\n');
+      lines.forEach((line, li) => {
+        ctx2.fillText(line, cx, cy + (li - (lines.length-1)/2)*13);
+      });
+    });
+  }
+
+  // ── S9 ──
+  if (!chartsCreated.s9) {
+    chartsCreated.s9 = true;
+
+    new Chart(document.getElementById('c_renov_total'), {
+      type:'bar',
+      data:{
+        labels:DATA.renovTotal.map(d=>d.t.substring(0,28)+'…'),
+        datasets:[{data:DATA.renovTotal.map(d=>d.r), backgroundColor:COLORS.orange, borderRadius:4}]
+      },
+      options: baseOptions({ indexAxis:'y', scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}}} })
+    });
+
+    new Chart(document.getElementById('c_renov_prom'), {
+      type:'bar',
+      data:{
+        labels:DATA.renovProm.map(d=>d.t.substring(0,28)+'…'),
+        datasets:[{data:DATA.renovProm.map(d=>d.avg), backgroundColor:DATA.renovProm.map(d=>d.avg>6?COLORS.red:d.avg>4?COLORS.orange:COLORS.yellow), borderRadius:4}]
+      },
+      options: baseOptions({ indexAxis:'y', scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}}} })
+    });
+
+    // Table
+    const tb9 = document.getElementById('tb_renov');
+    DATA.renovProm.forEach((d,i) => {
+      tb9.innerHTML += `<tr>
+        <td><span class="rank-num rank-${i<3?i+1:''}">${i+1}</span></td>
+        <td style="max-width:280px;font-size:0.76rem">${d.t}</td>
+        <td>${d.p}</td>
+        <td style="color:${d.avg>5?'var(--red)':d.avg>3?'var(--orange)':'var(--text)'}"><strong>${d.avg}</strong></td>
+        <td style="font-size:0.72rem">${d.sem}</td>
+      </tr>`;
+    });
+
+    new Chart(document.getElementById('c_sugeridos'), {
+      type:'bar',
+      data:{
+        labels:DATA.sugeridos.map(d=>d.t.substring(0,25)+'…'),
+        datasets:[
+          {label:'Préstamos', data:DATA.sugeridos.map(d=>d.p), backgroundColor:COLORS.blue, borderRadius:4},
+          {label:'Prom. Renovaciones', data:DATA.sugeridos.map(d=>d.avg), backgroundColor:COLORS.orange, borderRadius:4, yAxisID:'y2'}
+        ]
+      },
+      options: baseOptions({
+        plugins:{legend:{display:true,labels:{color:'#bfbfbf',boxWidth:12}},tooltip:baseOptions().plugins.tooltip},
+        scales:{
+          x:{grid:gridStyle,ticks:{...tickStyle,font:{size:9}}},
+          y:{grid:gridStyle,ticks:tickStyle,position:'left'},
+          y2:{grid:{display:false},ticks:{...tickStyle,callback:v=>v+'x'},position:'right'}
+        }
+      })
+    });
+  }
+
+  // ── S10 ──
+  if (!chartsCreated.s10) {
+    chartsCreated.s10 = true;
+
+    // Tables
+    const tbUL = document.getElementById('tb_users_lib');
+    DATA.usuarios_libros.forEach((d,i) => {
+      tbUL.innerHTML += `<tr>
+        <td><span class="rank-num rank-${i<3?i+1:''}">${i+1}</span></td>
+        <td>${d.u}</td>
+        <td><strong style="color:var(--text)">${d.p}</strong></td>
+        <td>${d.d}</td>
+        <td style="font-size:0.72rem">${d.sem}</td>
+      </tr>`;
+    });
+
+    const tbUE = document.getElementById('tb_users_esp');
+    DATA.usuarios_esp.forEach((d,i) => {
+      tbUE.innerHTML += `<tr>
+        <td><span class="rank-num rank-${i<3?i+1:''}">${i+1}</span></td>
+        <td>${d.u}</td>
+        <td><strong style="color:${d.u==='USER_1284'?'var(--red)':'var(--text)}'}">${d.p}</strong></td>
+        <td>${d.d}</td>
+        <td style="font-size:0.72rem">${d.sem}</td>
+      </tr>`;
+    });
+
+    // Ubicaciones
+    new Chart(document.getElementById('c_ubicaciones'), {
+      type:'bar',
+      data:{
+        labels:DATA.ubicaciones.map(d=>'Sig.'+d.sig),
+        datasets:[{data:DATA.ubicaciones.map(d=>d.p), backgroundColor:PALETTE, borderRadius:4}]
+      },
+      options: baseOptions({ indexAxis:'y', scales:{x:{grid:gridStyle,ticks:tickStyle},y:{grid:gridStyle,ticks:tickStyle}} })
+    });
+
+    // Heatmap
+    const hm = DATA.heatmap;
+    const hmEl = document.getElementById('heatmap_container');
+
+    const maxVal = Math.max(...hm.data.flat());
+
+    let html = `<div style="display:grid;grid-template-columns:160px repeat(${hm.cols.length},1fr);gap:3px;">`;
+
+    // Header row
+    html += `<div></div>`;
+    hm.cols.forEach(c => {
+      html += `<div style="text-align:center;font-size:0.7rem;color:var(--text-sec);padding:4px;font-weight:700">${c}</div>`;
+    });
+
+    // Data rows
+    hm.data.forEach((row, ri) => {
+      html += `<div style="font-size:0.72rem;color:var(--text-sec);padding:4px 0;display:flex;align-items:center">${hm.rows[ri]}</div>`;
+      row.forEach(val => {
+        const pct = val / maxVal;
+        const alpha = Math.max(0.1, pct);
+        const r = ri < 2 ? '76,120,168' : ri < 4 ? '118,183,178' : ri === 4 ? '176,122,161' : '89,161,79';
+        html += `<div class="heat-cell" title="${val}" style="background:rgba(${r},${alpha});height:38px;font-size:${val>0?'0.7rem':'0'}">${val>0?val.toLocaleString():''}</div>`;
+      });
+    });
+
+    html += '</div>';
+
+    // Legend
+    html += `<div style="margin-top:12px;display:flex;align-items:center;gap:8px;font-size:0.7rem;color:var(--text-sec);">
+      <span>Baja</span>
+      <div style="display:flex;gap:2px">`;
+    for(let i=0;i<=10;i++){
+      html += `<div style="width:18px;height:10px;border-radius:2px;background:rgba(76,120,168,${i/10})"></div>`;
+    }
+    html += `</div><span>Alta</span></div>`;
+
+    hmEl.innerHTML = html;
+  }
+}
+
+// Initial render
+renderCharts();
+
+</script>
+</body>
+</html>
